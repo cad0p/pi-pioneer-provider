@@ -1,0 +1,14 @@
+{
+  "name": "pi-pioneer-provider",
+  "version": "1.0.0",
+  "description": "Pi coding agent provider for Pioneer AI API",
+  "type": "module",
+  "keywords": ["pi-package"],
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
+  }
+}
