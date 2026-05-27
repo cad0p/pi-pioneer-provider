@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "description": "Pi coding agent provider for Pioneer AI API",
   "type": "module",
-  "keywords": ["pi-package"],
+  "keywords": ["pi-package", "pi-provider", "pioneer-ai"],
+  "author": "jalyfeng",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jalyfeng/pi-pioneer-provider.git"
+  },
+  "files": ["index.ts", "package.json", "README.md"],
   "pi": {
     "extensions": ["./index.ts"]
   },
