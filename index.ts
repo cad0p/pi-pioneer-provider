@@ -128,6 +128,13 @@ export default async function (pi: ExtensionAPI) {
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
       contextWindow,
       maxTokens,
+      // Pioneer persists every inference by default (store: true), feeding its
+      // evaluation, use-case clustering, and adapter-training pipeline. pi's
+      // openai-completions client only emits `store: false` when the provider
+      // is known to support the `store` field, which it auto-detects from the
+      // baseUrl. Pioneer's URL isn't recognized, so opt in explicitly to turn
+      // off inference retention on every request.
+      compat: { supportsStore: true },
     })),
   });
 }

@@ -1,19 +1,22 @@
-# pi-pioneer-provider
+# @cadop/pi-pioneer-provider
 
 A [Pi](https://pi.dev) provider extension that connects to [Pioneer AI](https://pioneer.ai)'s OpenAI-compatible API.
+
+> Fork of [`jalyfeng/pi-pioneer-provider`](https://github.com/jalyfeng/pi-pioneer-provider) that opts out of
+> Pioneer's inference retention by sending `store: false` on every request (see [Privacy](#privacy)).
 
 ## Installation
 
 Install the package via Pi's package manager:
 
 ```bash
-pi install npm:pi-pioneer-provider
+pi install npm:@cadop/pi-pioneer-provider
 ```
 
 Or pin to a specific version:
 
 ```bash
-pi install npm:pi-pioneer-provider@1.0.0
+pi install npm:@cadop/pi-pioneer-provider@0.1.0
 ```
 
 ## Authentication
@@ -60,6 +63,14 @@ Example prompt:
 ```
 Write a TypeScript function that fetches JSON from an API and retries on failure.
 ```
+
+## Privacy
+
+By default, Pioneer persists every inference — input, output, and metadata — to drive
+evaluation, use-case clustering, and adapter training. This fork sets `compat.supportsStore: true`
+on each model so Pi emits `store: false` on every request, disabling that retention.
+
+If you *want* retention enabled, use the upstream package instead.
 
 ## Requirements
 

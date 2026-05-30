@@ -1,14 +1,18 @@
 {
-  "name": "pi-pioneer-provider",
-  "version": "1.0.0",
+  "name": "@cadop/pi-pioneer-provider",
+  "version": "0.1.0",
   "description": "Pi coding agent provider for Pioneer AI API",
   "type": "module",
   "keywords": ["pi-package", "pi-provider", "pioneer-ai"],
   "author": "jalyfeng",
+  "contributors": ["cad0p"],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jalyfeng/pi-pioneer-provider.git"
+    "url": "https://github.com/cad0p/pi-pioneer-provider.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": ["index.ts", "package.json", "README.md"],
   "pi": {
