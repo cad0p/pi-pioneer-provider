@@ -1,4 +1,4 @@
-# @cadop/pi-pioneer-provider
+# @cad0p/pi-pioneer-provider
 
 A [Pi](https://pi.dev) provider extension that connects to [Pioneer AI](https://pioneer.ai)'s OpenAI-compatible API.
 
@@ -10,13 +10,13 @@ A [Pi](https://pi.dev) provider extension that connects to [Pioneer AI](https://
 Install the package via Pi's package manager:
 
 ```bash
-pi install npm:@cadop/pi-pioneer-provider
+pi install npm:@cad0p/pi-pioneer-provider
 ```
 
 Or pin to a specific version:
 
 ```bash
-pi install npm:@cadop/pi-pioneer-provider@0.1.0
+pi install npm:@cad0p/pi-pioneer-provider@0.1.0
 ```
 
 ## Authentication
