@@ -109,7 +109,7 @@ export default async function (pi: ExtensionAPI) {
   pi.registerProvider("pioneer", {
     name: "Pioneer AI",
     baseUrl,
-    apiKey: "PIONEER_API_KEY",
+    apiKey: "$PIONEER_API_KEY",
     authHeader: true,
     api: "openai-completions",
 
