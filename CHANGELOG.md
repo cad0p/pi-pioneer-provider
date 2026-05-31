@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [calver-released]
+## [0.1.1] - 2026-05-31
 
 <!-- USER-EDITABLE SECTION START -->
 - Removes the `Deprecation warning: registerProvider("pioneer") apiKey value "PIONEER_API_KEY"` when starting pi
