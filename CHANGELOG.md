@@ -17,6 +17,8 @@ Initial release of the `@cad0p` fork of `pi-pioneer-provider`.
 
 - Correct npm scope to @cad0p (matches existing scope/username) ([#1](https://github.com/cad0p/pi-pioneer-provider/pull/1))
 
+- Use explicit $PIONEER_API_KEY env var reference syntax ([#2](https://github.com/cad0p/pi-pioneer-provider/pull/2))
+
 
 ## [0.1.0]
 
