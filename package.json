@@ -1,11 +1,10 @@
 {
   "name": "@cad0p/pi-pioneer-provider",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pi coding agent provider for Pioneer AI API",
   "type": "module",
   "keywords": ["pi-package", "pi-provider", "pioneer-ai"],
-  "author": "jalyfeng",
-  "contributors": ["cad0p"],
+  "author": "cad0p",
   "license": "MIT",
   "repository": {
     "type": "git",
