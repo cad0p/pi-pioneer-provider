@@ -5,11 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [calver-released]
 
 <!-- USER-EDITABLE SECTION START -->
-Initial release of the `@cad0p` fork of `pi-pioneer-provider`.
-
-**Highlights:**
-- Disables Pioneer inference retention by sending `store: false` on every request (`compat.supportsStore: true`)
-- Published under the `@cad0p` npm scope
+- Removes the `Deprecation warning: registerProvider("pioneer") apiKey value "PIONEER_API_KEY"` when starting pi
 <!-- USER-EDITABLE SECTION END -->
 
 
