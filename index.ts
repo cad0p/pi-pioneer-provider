@@ -80,7 +80,7 @@ async function fetchModels(
 
   const data = (await res.json()) as { models: PioneerModel[] };
 
-  return data.models
+  const discovered = data.models
     .filter(
       (m) =>
         m.task_type === "decoder" &&
@@ -94,6 +94,23 @@ async function fetchModels(
       contextWindow: m.context_window,
       maxTokens: Math.min(m.context_window >> 2, 131072),
     }));
+
+  // Derive router model limits from max of all discoverable models
+  // The router can route to any candidate, so effective max = max of pool
+  const maxContextWindow = discovered.length > 0
+    ? Math.max(...discovered.map((m) => m.contextWindow))
+    : 200000;
+  const maxTokens = Math.min(maxContextWindow >> 2, 131072);
+
+  const routerModel = {
+    id: "pioneer/auto",
+    name: "Pioneer Auto Router (Pioneer)",
+    reasoning: true,
+    contextWindow: maxContextWindow,
+    maxTokens,
+  };
+
+  return [routerModel, ...discovered];
 }
 
 // ---------------------------------------------------------------------------
@@ -104,7 +121,7 @@ export default async function (pi: ExtensionAPI) {
   const baseUrl =
     process.env.PIONEER_BASE_URL ?? "https://api.pioneer.ai/v1";
 
-  const models = await fetchModels(baseUrl);
+  const allModels = await fetchModels(baseUrl);
 
   pi.registerProvider("pioneer", {
     name: "Pioneer AI",
@@ -120,7 +137,7 @@ export default async function (pi: ExtensionAPI) {
       getApiKey,
     },
 
-    models: models.map(({ id, name, reasoning, contextWindow, maxTokens }) => ({
+    models: allModels.map(({ id, name, reasoning, contextWindow, maxTokens }) => ({
       id,
       name,
       reasoning,

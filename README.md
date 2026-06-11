@@ -16,7 +16,7 @@ pi install npm:@cad0p/pi-pioneer-provider
 Or pin to a specific version:
 
 ```bash
-pi install npm:@cad0p/pi-pioneer-provider@0.1.0
+pi install npm:@cad0p/pi-pioneer-provider@0.2.0
 ```
 
 ## Authentication
@@ -40,11 +40,15 @@ pi
 
 Models are discovered dynamically at startup from Pioneer's `/base-models` endpoint. Only chat-capable decoder models with inference support are exposed.
 
+**Plus the `pioneer/auto` router model** (added statically — not exposed via `/base-models`), which automatically routes tasks to the cheapest model meeting quality thresholds.
+
 The following model capabilities are reported:
 
 - **Reasoning**: Enabled for all discovered models
-- **Context window**: Fetched from Pioneer API
-- **Max tokens**: Set to `min(context_window / 4, 131072)`
+- **Context window**: Fetched from Pioneer API. For the router model, derived dynamically as the **maximum context window among all discoverable models** (currently 1M tokens)
+- **Max tokens**: Set to `min(context_window / 4, 131072)` for all models
+
+> **Note**: The router model's limits are computed at startup from the live `/base-models` catalog. Since the router can route to any candidate model, its effective limits equal the maximum of the pool.
 
 ## Configuration
 
@@ -53,6 +57,10 @@ The provider uses `https://api.pioneer.ai/v1` as the default base URL. You can o
 ```bash
 export PIONEER_BASE_URL=https://your-custom-endpoint.com/v1
 ```
+
+## Prompt Caching
+
+Pioneer honors prompt caching on `/v1/responses`, `/v1/messages`, and native generate endpoints. This provider uses the OpenAI-compatible `/v1/chat/completions` endpoint — caching behavior there depends on Pioneer's backend implementation.
 
 ## Usage
 
