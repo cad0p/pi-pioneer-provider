@@ -60,7 +60,12 @@ export PIONEER_BASE_URL=https://your-custom-endpoint.com/v1
 
 ## Prompt Caching
 
-Pioneer honors prompt caching on `/v1/responses`, `/v1/messages`, and native generate endpoints. This provider uses the OpenAI-compatible `/v1/chat/completions` endpoint — caching behavior there depends on Pioneer's backend implementation.
+Pioneer honors prompt caching on `/v1/chat/completions` (this provider's endpoint), `/v1/messages`, `/v1/responses`, and native generate endpoints.
+
+- **OpenAI/GPT models** (GPT-4, GPT-5 families): Automatic — no action needed
+- **Claude/Anthropic models**: Requires `cache_control` markers on content blocks (system prompt must be content-block array, not plain string)
+
+See [Pioneer's prompt caching guide](https://docs.pioneer.ai/api-reference/prompt-caching) for details.
 
 ## Usage
 
