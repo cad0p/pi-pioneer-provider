@@ -44,7 +44,8 @@ Models are discovered dynamically at startup from Pioneer's `/base-models` endpo
 
 The following model capabilities are reported:
 
-- **Reasoning**: Enabled for all discovered models
+- **Reasoning**: Enabled for all discovered concrete models
+- **Router thinking**: Disabled for `pioneer/auto`. Pioneer's `/v1/messages` router can select upstreams that reject Anthropic extended-thinking payloads, so the provider clamps Pi thinking off for the router while leaving concrete Pioneer models reasoning-capable.
 - **Context window**: Fetched from Pioneer API. For the router model, derived dynamically as the **maximum context window among all discoverable models** (currently 1M tokens)
 - **Max tokens**: Set to `min(context_window / 4, 131072)` for all models
 
@@ -66,7 +67,7 @@ Pioneer honors prompt caching on `/v1/chat/completions`, `/v1/messages`, `/v1/re
 - **OpenAI/GPT models** (GPT-4, GPT-5 families): Sent through `/v1/messages` so cached prompt tokens are reported as cache reads instead of full prompt input
 - **`pioneer/auto`**: Sent through `/v1/messages` so router choices, including GPT routes, get the cleaner cache accounting
 
-> **Router caveat**: `pioneer/auto` remains available, but Pioneer's router can be less reliable than selecting a concrete model on very long, mixed agent conversations (for example sessions with large context, prior tool calls/results, and prior responses from multiple model APIs). If `pioneer/auto` returns an upstream provider error in that situation, switch to a concrete Pioneer model such as `pioneer/gpt-5.5` or a specific Claude model; those models still use `/v1/messages` and preserve the clearer prompt-cache accounting.
+> **Router caveat**: `pioneer/auto` remains available, but Pioneer's router can be less reliable than selecting a concrete model on very long, mixed agent conversations (for example sessions with large context, prior tool calls/results, and prior responses from multiple model APIs). The provider disables Pi extended-thinking for `pioneer/auto` because router-selected upstreams can reject Anthropic thinking payloads; use concrete models such as `pioneer/gpt-5.5` or specific Claude models when you need explicit thinking blocks/tokens. Concrete models still use `/v1/messages` and preserve the clearer prompt-cache accounting.
 
 See [Pioneer's prompt caching guide](https://docs.pioneer.ai/api-reference/prompt-caching) for details.
 
