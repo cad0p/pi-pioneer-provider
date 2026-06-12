@@ -170,6 +170,9 @@ function streamPioneer(
     const anthropicModel = {
       ...model,
       api: "anthropic-messages" as const,
+      // Anthropic SDK appends /v1/messages itself. Pioneer provider baseUrl is
+      // the OpenAI-compatible /v1 URL, so strip /v1 for this transport.
+      baseUrl: model.baseUrl.replace(/\/v1$/, ""),
       compat: {
         ...model.compat,
         supportsTemperature: false,
