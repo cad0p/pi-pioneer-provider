@@ -111,7 +111,7 @@ async function fetchModels(
       name: `${m.label} (Pioneer)`,
       reasoning: true,
       contextWindow: m.context_window,
-      maxTokens: Math.min(m.context_window >> 2, 131072),
+      maxTokens: getPioneerMaxTokens(m.id, m.context_window),
       cost: {
         input: m.input_price_per_million ?? 0,
         output: m.output_price_per_million ?? 0,
@@ -133,8 +133,8 @@ async function fetchModels(
     // Pioneer's /messages router can select upstreams that reject Anthropic
     // extended-thinking payloads. Fresh interactive Pi sessions with
     // `--thinking high` produced a message_start followed by an upstream error
-    // and no assistant text. Keep direct models reasoning-capable, but disable
-    // Pi thinking controls for the auto router.
+    // and no assistant text. Keep compatible concrete models reasoning-capable,
+    // but disable Pi thinking controls for the auto router.
     reasoning: false,
     contextWindow: maxContextWindow,
     // The router can choose cheaper/smaller backends than the max-context pool.
@@ -152,6 +152,13 @@ async function fetchModels(
 // Provider transport selection
 // ---------------------------------------------------------------------------
 
+function getPioneerMaxTokens(modelId: string, contextWindow: number): number {
+  const catalogCap = Math.min(contextWindow >> 2, 131072);
+  // Pioneer Opus 4.7 currently accepts store:false/no-thinking requests at
+  // smaller caps, but returns an upstream error when max_tokens is 131072.
+  return modelId === "claude-opus-4-7" ? Math.min(catalogCap, 65536) : catalogCap;
+}
+
 function isClaudeModel(modelId: string): boolean {
   return modelId.startsWith("claude-");
 }
@@ -162,9 +169,13 @@ function shouldUseAnthropicMessages(modelId: string): boolean {
 
 function isAdaptiveThinkingClaude(modelId: string): boolean {
   // Verified against Pioneer's Anthropic-compatible /messages endpoint:
-  // Opus 4.8 accepts adaptive thinking. Opus 4.7 and Sonnet/Opus 4.6
-  // currently reject the adaptive payload shape through Pioneer/Bedrock.
+  // Opus 4.8 accepts adaptive thinking. Opus 4.7 currently rejects
+  // budget-based thinking through Pioneer/Bedrock.
   return modelId === "claude-opus-4-8";
+}
+
+function supportsPioneerThinking(modelId: string): boolean {
+  return modelId !== "auto" && modelId !== "claude-opus-4-7";
 }
 
 function isOpenAIModel(modelId: string): boolean {
@@ -288,7 +299,7 @@ export default async function (pi: ExtensionAPI) {
       id,
       name,
       api: "pioneer",
-      reasoning,
+      reasoning: reasoning && supportsPioneerThinking(id),
       input: ["text"],
       cost,
       contextWindow,
