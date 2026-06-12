@@ -130,7 +130,12 @@ async function fetchModels(
   const routerModel = {
     id: "auto",
     name: "Pioneer Auto Router (Pioneer)",
-    reasoning: true,
+    // Pioneer's /messages router can select upstreams that reject Anthropic
+    // extended-thinking payloads. Fresh interactive Pi sessions with
+    // `--thinking high` produced a message_start followed by an upstream error
+    // and no assistant text. Keep direct models reasoning-capable, but disable
+    // Pi thinking controls for the auto router.
+    reasoning: false,
     contextWindow: maxContextWindow,
     // The router can choose cheaper/smaller backends than the max-context pool.
     // Advertising 131k output caused real resumed sessions to fail upstream when
