@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-06-12
+
+<!-- USER-EDITABLE SECTION START -->
+Privacy fix for the `/v1/messages` transport.
+
+**Highlights:**
+- Explicitly sends `store: false` on Pioneer Anthropic-compatible `/v1/messages` requests
+- Prevents Claude, GPT/OpenAI-family, and `pioneer/auto` messages calls from being persisted in Pioneer's inference database
+- Keeps full-tool Pi usage working across `pioneer/auto`, `pioneer/gpt-5.5`, `pioneer/claude-opus-4-7`, and `pioneer/claude-opus-4-8`
+- Adjusts Opus 4.7 compatibility by disabling Pi thinking and capping max output tokens at 65,536
+<!-- USER-EDITABLE SECTION END -->
+
+### 🐛 Bug Fixes
+
+- Send store false on messages transport ([#12](https://github.com/cad0p/pi-pioneer-provider/pull/12))
+
+
 ## [0.2.1] - 2026-06-12
 
 <!-- USER-EDITABLE SECTION START -->
