@@ -248,7 +248,7 @@ function streamPioneer(
       headers: { ...options?.headers, "x-api-key": options?.apiKey ?? "" },
       onPayload: async (payload, payloadModel) => {
         const pioneerPayload = payload && typeof payload === "object"
-          ? { ...payload, model: getPioneerApiModelId(model.id) }
+          ? { ...payload, model: getPioneerApiModelId(model.id), store: false }
           : payload;
         const replacement = await options?.onPayload?.(pioneerPayload, payloadModel);
         return replacement ?? pioneerPayload;
