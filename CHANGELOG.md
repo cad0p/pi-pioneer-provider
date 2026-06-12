@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Route Pioneer cacheable models via messages ([#7](https://github.com/cad0p/pi-pioneer-provider/pull/7))
+- Disable thinking for Pioneer auto router ([#9](https://github.com/cad0p/pi-pioneer-provider/pull/9))
 
 
 ## [0.2.0] - 2026-06-11
