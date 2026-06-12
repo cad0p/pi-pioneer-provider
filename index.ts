@@ -213,7 +213,7 @@ export default async function (pi: ExtensionAPI) {
     baseUrl,
     apiKey: "$PIONEER_API_KEY",
     authHeader: true,
-    api: "openai-completions",
+    api: "pioneer",
     streamSimple: streamPioneer,
 
     oauth: {
@@ -226,9 +226,7 @@ export default async function (pi: ExtensionAPI) {
     models: allModels.map(({ id, name, reasoning, contextWindow, maxTokens, cost }) => ({
       id,
       name,
-      api: shouldUseAnthropicMessages(id)
-        ? ("anthropic-messages" as const)
-        : ("openai-completions" as const),
+      api: "pioneer",
       reasoning,
       input: ["text"],
       cost,
