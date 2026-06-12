@@ -9,8 +9,10 @@
  *   2. Set PIONEER_API_KEY environment variable
  */
 
-import { streamSimpleAnthropic } from "@earendil-works/pi-ai/anthropic";
-import { streamSimpleOpenAICompletions } from "@earendil-works/pi-ai/openai-completions";
+import {
+  streamSimpleAnthropic,
+  streamSimpleOpenAICompletions,
+} from "@earendil-works/pi-ai";
 import type {
   AssistantMessageEventStream,
   Context,
