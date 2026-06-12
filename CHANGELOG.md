@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [calver-released]
+## [0.2.2] - 2026-06-12
 
 <!-- USER-EDITABLE SECTION START -->
 Privacy fix for the `/v1/messages` transport.
