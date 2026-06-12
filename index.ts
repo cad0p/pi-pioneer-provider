@@ -15,6 +15,7 @@ import {
 } from "@earendil-works/pi-ai";
 import type {
   AssistantMessageEventStream,
+  AssistantMessage,
   Context,
   Model,
   OAuthCredentials,
@@ -165,6 +166,46 @@ function getPioneerApiModelId(modelId: string): string {
   return modelId === "auto" ? "pioneer/auto" : modelId;
 }
 
+function isLikelyAnthropicThinkingSignature(signature: unknown): boolean {
+  return typeof signature === "string" &&
+    signature.length > 64 &&
+    !/\s/.test(signature) &&
+    signature !== "reasoning" &&
+    signature !== "reasoning_content";
+}
+
+function sanitizeContextForPioneerMessages(context: Context): Context {
+  return {
+    ...context,
+    messages: context.messages.map((message) => {
+      if (message.role !== "assistant") return message;
+
+      const content: AssistantMessage["content"] = [];
+      for (const block of message.content) {
+        if (block.type !== "thinking") {
+          content.push(block);
+          continue;
+        }
+        if (isLikelyAnthropicThinkingSignature(block.thinkingSignature)) {
+          content.push(block);
+          continue;
+        }
+        if (block.thinking.trim().length === 0) continue;
+
+        // Pi sessions can contain thinking blocks from OpenAI-compatible
+        // providers where `thinkingSignature` is a field name such as
+        // `reasoning_content`, not an Anthropic encrypted signature. Passing
+        // that back through /messages can make the selected upstream reject the
+        // whole request. Replaying it as plain text is the safe cross-provider
+        // handoff behavior and matches pi-ai's own missing-signature fallback.
+        content.push({ type: "text", text: block.thinking });
+      }
+
+      return { ...message, content };
+    }),
+  };
+}
+
 function streamPioneer(
   model: Model<any>,
   context: Context,
@@ -191,7 +232,7 @@ function streamPioneer(
       },
     };
 
-    return streamSimpleAnthropic(anthropicModel, context, {
+    return streamSimpleAnthropic(anthropicModel, sanitizeContextForPioneerMessages(context), {
       ...options,
       // Pioneer accepts either Authorization or x-api-key on /messages; x-api-key
       // matches their examples and avoids ambiguity with Anthropic SDK defaults.
