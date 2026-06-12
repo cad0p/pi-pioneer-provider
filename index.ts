@@ -9,9 +9,18 @@
  *   2. Set PIONEER_API_KEY environment variable
  */
 
+import {
+  streamSimpleAnthropic,
+  streamSimpleOpenAICompletions,
+} from "@earendil-works/pi-ai";
 import type {
+  AssistantMessageEventStream,
+  AssistantMessage,
+  Context,
+  Model,
   OAuthCredentials,
   OAuthLoginCallbacks,
+  SimpleStreamOptions,
 } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
@@ -55,6 +64,10 @@ interface PioneerModel {
   label: string;
   task_type: string;
   context_window: number;
+  input_price_per_million?: number;
+  output_price_per_million?: number;
+  cache_read_price_per_million?: number;
+  cache_write_price_per_million?: number;
   supports_inference: boolean;
   is_chat_model: boolean;
 }
@@ -68,6 +81,12 @@ async function fetchModels(
     reasoning: boolean;
     contextWindow: number;
     maxTokens: number;
+    cost: {
+      input: number;
+      output: number;
+      cacheRead: number;
+      cacheWrite: number;
+    };
   }>
 > {
   const res = await fetch(`${baseUrl.replace(/\/v1$/, "")}/base-models`);
@@ -93,6 +112,12 @@ async function fetchModels(
       reasoning: true,
       contextWindow: m.context_window,
       maxTokens: Math.min(m.context_window >> 2, 131072),
+      cost: {
+        input: m.input_price_per_million ?? 0,
+        output: m.output_price_per_million ?? 0,
+        cacheRead: m.cache_read_price_per_million ?? 0,
+        cacheWrite: m.cache_write_price_per_million ?? 0,
+      },
     }));
 
   // Derive router model limits from max of all discoverable models
@@ -103,14 +128,130 @@ async function fetchModels(
   const maxTokens = Math.min(maxContextWindow >> 2, 131072);
 
   const routerModel = {
-    id: "pioneer/auto",
+    id: "auto",
     name: "Pioneer Auto Router (Pioneer)",
     reasoning: true,
     contextWindow: maxContextWindow,
-    maxTokens,
+    // The router can choose cheaper/smaller backends than the max-context pool.
+    // Advertising 131k output caused real resumed sessions to fail upstream when
+    // prompt tokens plus requested output exceeded the selected backend's budget.
+    // Keep direct models at their catalog-derived caps; keep auto conservative.
+    maxTokens: Math.min(maxTokens, 32768),
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   };
 
   return [routerModel, ...discovered];
+}
+
+// ---------------------------------------------------------------------------
+// Provider transport selection
+// ---------------------------------------------------------------------------
+
+function isClaudeModel(modelId: string): boolean {
+  return modelId.startsWith("claude-");
+}
+
+function shouldUseAnthropicMessages(modelId: string): boolean {
+  return modelId === "auto" || isClaudeModel(modelId) || isOpenAIModel(modelId);
+}
+
+function isAdaptiveThinkingClaude(modelId: string): boolean {
+  // Verified against Pioneer's Anthropic-compatible /messages endpoint:
+  // Opus 4.8 accepts adaptive thinking. Opus 4.7 and Sonnet/Opus 4.6
+  // currently reject the adaptive payload shape through Pioneer/Bedrock.
+  return modelId === "claude-opus-4-8";
+}
+
+function isOpenAIModel(modelId: string): boolean {
+  return /^(gpt-|o\d|chatgpt-)/.test(modelId);
+}
+
+function getPioneerApiModelId(modelId: string): string {
+  return modelId === "auto" ? "pioneer/auto" : modelId;
+}
+
+function isLikelyAnthropicThinkingSignature(signature: unknown): boolean {
+  return typeof signature === "string" &&
+    signature.length > 64 &&
+    !/\s/.test(signature) &&
+    signature !== "reasoning" &&
+    signature !== "reasoning_content";
+}
+
+function sanitizeContextForPioneerMessages(context: Context): Context {
+  return {
+    ...context,
+    messages: context.messages.map((message) => {
+      if (message.role !== "assistant") return message;
+
+      const content: AssistantMessage["content"] = [];
+      for (const block of message.content) {
+        if (block.type !== "thinking") {
+          content.push(block);
+          continue;
+        }
+        if (isLikelyAnthropicThinkingSignature(block.thinkingSignature)) {
+          content.push(block);
+          continue;
+        }
+        if (block.thinking.trim().length === 0) continue;
+
+        // Pi sessions can contain thinking blocks from OpenAI-compatible
+        // providers where `thinkingSignature` is a field name such as
+        // `reasoning_content`, not an Anthropic encrypted signature. Passing
+        // that back through /messages can make the selected upstream reject the
+        // whole request. Replaying it as plain text is the safe cross-provider
+        // handoff behavior and matches pi-ai's own missing-signature fallback.
+        content.push({ type: "text", text: block.thinking });
+      }
+
+      return { ...message, content };
+    }),
+  };
+}
+
+function streamPioneer(
+  model: Model<any>,
+  context: Context,
+  options?: SimpleStreamOptions,
+): AssistantMessageEventStream {
+  if (shouldUseAnthropicMessages(model.id)) {
+    const anthropicModel = {
+      ...model,
+      api: "anthropic-messages" as const,
+      // Anthropic SDK appends /v1/messages itself. Pioneer provider baseUrl is
+      // the OpenAI-compatible /v1 URL, so strip /v1 for this transport.
+      baseUrl: model.baseUrl.replace(/\/v1$/, ""),
+      compat: {
+        ...model.compat,
+        supportsTemperature: false,
+        // Pioneer's /messages endpoint accepts tool `cache_control`, but keeping
+        // it off avoids counting the very large pi tool schema as a fresh cache
+        // write on every request. The stable system prompt and latest message
+        // are still cache-marked by the Anthropic provider.
+        supportsCacheControlOnTools: false,
+        ...(isAdaptiveThinkingClaude(model.id)
+          ? { forceAdaptiveThinking: true }
+          : {}),
+      },
+    };
+
+    return streamSimpleAnthropic(anthropicModel, sanitizeContextForPioneerMessages(context), {
+      ...options,
+      // Pioneer accepts either Authorization or x-api-key on /messages; x-api-key
+      // matches their examples and avoids ambiguity with Anthropic SDK defaults.
+      headers: { ...options?.headers, "x-api-key": options?.apiKey ?? "" },
+      onPayload: async (payload, payloadModel) => {
+        const pioneerPayload = payload && typeof payload === "object"
+          ? { ...payload, model: getPioneerApiModelId(model.id) }
+          : payload;
+        const replacement = await options?.onPayload?.(pioneerPayload, payloadModel);
+        return replacement ?? pioneerPayload;
+      },
+    });
+  }
+
+  return streamSimpleOpenAICompletions(model as Model<"openai-completions">, context, options);
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +269,8 @@ export default async function (pi: ExtensionAPI) {
     baseUrl,
     apiKey: "$PIONEER_API_KEY",
     authHeader: true,
-    api: "openai-completions",
+    api: "pioneer",
+    streamSimple: streamPioneer,
 
     oauth: {
       name: "Pioneer AI",
@@ -137,12 +279,13 @@ export default async function (pi: ExtensionAPI) {
       getApiKey,
     },
 
-    models: allModels.map(({ id, name, reasoning, contextWindow, maxTokens }) => ({
+    models: allModels.map(({ id, name, reasoning, contextWindow, maxTokens, cost }) => ({
       id,
       name,
+      api: "pioneer",
       reasoning,
       input: ["text"],
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      cost,
       contextWindow,
       maxTokens,
       // Pioneer persists every inference by default (store: true), feeding its
@@ -151,7 +294,15 @@ export default async function (pi: ExtensionAPI) {
       // is known to support the `store` field, which it auto-detects from the
       // baseUrl. Pioneer's URL isn't recognized, so opt in explicitly to turn
       // off inference retention on every request.
-      compat: { supportsStore: true },
+      compat: {
+        supportsStore: true,
+        supportsDeveloperRole: false,
+        maxTokensField: isOpenAIModel(id) ? "max_completion_tokens" : "max_tokens",
+        cacheControlFormat: "anthropic",
+        supportsTemperature: false,
+        supportsCacheControlOnTools: false,
+        ...(isAdaptiveThinkingClaude(id) ? { forceAdaptiveThinking: true } : {}),
+      },
     })),
   });
 }
