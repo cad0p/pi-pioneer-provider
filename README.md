@@ -66,6 +66,8 @@ Pioneer honors prompt caching on `/v1/chat/completions`, `/v1/messages`, `/v1/re
 - **OpenAI/GPT models** (GPT-4, GPT-5 families): Sent through `/v1/messages` so cached prompt tokens are reported as cache reads instead of full prompt input
 - **`pioneer/auto`**: Sent through `/v1/messages` so router choices, including GPT routes, get the cleaner cache accounting
 
+> **Router caveat**: `pioneer/auto` remains available, but Pioneer's router can be less reliable than selecting a concrete model on very long, mixed agent conversations (for example sessions with large context, prior tool calls/results, and prior responses from multiple model APIs). If `pioneer/auto` returns an upstream provider error in that situation, switch to a concrete Pioneer model such as `pioneer/gpt-5.5` or a specific Claude model; those models still use `/v1/messages` and preserve the clearer prompt-cache accounting.
+
 See [Pioneer's prompt caching guide](https://docs.pioneer.ai/api-reference/prompt-caching) for details.
 
 ## Usage
