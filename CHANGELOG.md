@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-06-12
+
+<!-- USER-EDITABLE SECTION START -->
+Bugfix release for Pioneer prompt caching and the `pioneer/auto` router.
+
+**Highlights:**
+- Routes Claude, GPT/OpenAI-family, and `pioneer/auto` through Pioneer's `/v1/messages` endpoint for clearer cache read/write accounting
+- Keeps `store: false` opt-out behavior intact
+- Fixes `pioneer/auto` model naming so Pi selects it as `pioneer/auto` while Pioneer receives `pioneer/auto` upstream
+- Disables Pi extended-thinking for `pioneer/auto` to avoid router-selected upstream errors; concrete Pioneer models remain reasoning-capable
+<!-- USER-EDITABLE SECTION END -->
+
+### 🐛 Bug Fixes
+
+- Route Pioneer cacheable models via messages ([#7](https://github.com/cad0p/pi-pioneer-provider/pull/7))
+- Disable thinking for Pioneer auto router ([#9](https://github.com/cad0p/pi-pioneer-provider/pull/9))
+
+### 📚 Documentation
+
+- Clarify `pioneer/auto` router cache and thinking caveats
+
+
 ## [0.2.0] - 2026-06-11
 
 <!-- USER-EDITABLE SECTION START -->
