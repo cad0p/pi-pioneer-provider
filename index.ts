@@ -127,7 +127,7 @@ async function fetchModels(
   const maxTokens = Math.min(maxContextWindow >> 2, 131072);
 
   const routerModel = {
-    id: "pioneer/auto",
+    id: "auto",
     name: "Pioneer Auto Router (Pioneer)",
     reasoning: true,
     contextWindow: maxContextWindow,
@@ -147,7 +147,7 @@ function isClaudeModel(modelId: string): boolean {
 }
 
 function shouldUseAnthropicMessages(modelId: string): boolean {
-  return modelId === "pioneer/auto" || isClaudeModel(modelId) || isOpenAIModel(modelId);
+  return modelId === "auto" || isClaudeModel(modelId) || isOpenAIModel(modelId);
 }
 
 function isAdaptiveThinkingClaude(modelId: string): boolean {
@@ -159,6 +159,10 @@ function isAdaptiveThinkingClaude(modelId: string): boolean {
 
 function isOpenAIModel(modelId: string): boolean {
   return /^(gpt-|o\d|chatgpt-)/.test(modelId);
+}
+
+function getPioneerApiModelId(modelId: string): string {
+  return modelId === "auto" ? "pioneer/auto" : modelId;
 }
 
 function streamPioneer(
@@ -192,6 +196,13 @@ function streamPioneer(
       // Pioneer accepts either Authorization or x-api-key on /messages; x-api-key
       // matches their examples and avoids ambiguity with Anthropic SDK defaults.
       headers: { ...options?.headers, "x-api-key": options?.apiKey ?? "" },
+      onPayload: async (payload, payloadModel) => {
+        const pioneerPayload = payload && typeof payload === "object"
+          ? { ...payload, model: getPioneerApiModelId(model.id) }
+          : payload;
+        const replacement = await options?.onPayload?.(pioneerPayload, payloadModel);
+        return replacement ?? pioneerPayload;
+      },
     });
   }
 
