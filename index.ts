@@ -132,7 +132,11 @@ async function fetchModels(
     name: "Pioneer Auto Router (Pioneer)",
     reasoning: true,
     contextWindow: maxContextWindow,
-    maxTokens,
+    // The router can choose cheaper/smaller backends than the max-context pool.
+    // Advertising 131k output caused real resumed sessions to fail upstream when
+    // prompt tokens plus requested output exceeded the selected backend's budget.
+    // Keep direct models at their catalog-derived caps; keep auto conservative.
+    maxTokens: Math.min(maxTokens, 32768),
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   };
 
