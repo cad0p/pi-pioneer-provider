@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [calver-released]
+
+<!-- USER-EDITABLE SECTION START -->
+<!-- Add your curated release notes here. -->
+<!-- USER-EDITABLE SECTION END -->
+
+### 🐛 Bug Fixes
+
+- Send store false on messages transport ([#12](https://github.com/cad0p/pi-pioneer-provider/pull/12))
+
+
 ## [0.2.1] - 2026-06-12
 
 <!-- USER-EDITABLE SECTION START -->
