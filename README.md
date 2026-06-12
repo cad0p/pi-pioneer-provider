@@ -60,10 +60,11 @@ export PIONEER_BASE_URL=https://your-custom-endpoint.com/v1
 
 ## Prompt Caching
 
-Pioneer honors prompt caching on `/v1/chat/completions` (this provider's endpoint), `/v1/messages`, `/v1/responses`, and native generate endpoints.
+Pioneer honors prompt caching on `/v1/chat/completions`, `/v1/messages`, `/v1/responses`, and native generate endpoints. This provider routes Pioneer Claude models, GPT/OpenAI-family models, and the `pioneer/auto` router through Pioneer's Anthropic-compatible `/v1/messages` endpoint because its usage accounting exposes cache reads and writes cleanly (`cache_read_input_tokens` / `cache_creation_input_tokens`). Other models continue to use OpenAI-compatible chat completions.
 
-- **OpenAI/GPT models** (GPT-4, GPT-5 families): Automatic — no action needed
-- **Claude/Anthropic models**: Requires `cache_control` markers on content blocks (system prompt must be content-block array, not plain string)
+- **Claude/Anthropic models**: Sent through `/v1/messages` with Anthropic `cache_control` markers
+- **OpenAI/GPT models** (GPT-4, GPT-5 families): Sent through `/v1/messages` so cached prompt tokens are reported as cache reads instead of full prompt input
+- **`pioneer/auto`**: Sent through `/v1/messages` so router choices, including GPT routes, get the cleaner cache accounting
 
 See [Pioneer's prompt caching guide](https://docs.pioneer.ai/api-reference/prompt-caching) for details.
 
