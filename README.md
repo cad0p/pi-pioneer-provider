@@ -61,10 +61,10 @@ export PIONEER_BASE_URL=https://your-custom-endpoint.com/v1
 
 ## Prompt Caching
 
-Pioneer honors prompt caching on `/v1/chat/completions`, `/v1/messages`, `/v1/responses`, and native generate endpoints. This provider routes Pioneer Claude models, GPT/OpenAI-family models, and the `pioneer/auto` router through Pioneer's Anthropic-compatible `/v1/messages` endpoint because its usage accounting exposes cache reads and writes cleanly (`cache_read_input_tokens` / `cache_creation_input_tokens`). Other models continue to use OpenAI-compatible chat completions.
+Pioneer honors prompt caching on `/v1/chat/completions`, `/v1/messages`, `/v1/responses`, and native generate endpoints. This provider routes Pioneer Claude models, GPT/OpenAI-family models, and the `pioneer/auto` router through Pioneer's Anthropic-compatible `/v1/messages` endpoint because its usage accounting exposes cache reads and writes cleanly (`cache_read_input_tokens` / `cache_creation_input_tokens`). Other models continue to use OpenAI-compatible chat completions. The provider caps advertised output at 128K tokens to stay within Pioneer's streaming limits for models such as `gpt-5.5`.
 
 - **Claude/Anthropic models**: Sent through `/v1/messages` with Anthropic `cache_control` markers
-- **OpenAI/GPT models** (GPT-4, GPT-5 families): Sent through `/v1/messages` so cached prompt tokens are reported as cache reads instead of full prompt input. `gpt-5.5` keeps this messages transport, but its max output is capped at 128K because Pioneer's `/v1/messages` streaming endpoint starts failing when `max_tokens` is above 128K.
+- **OpenAI/GPT models** (GPT-4, GPT-5 families): Sent through `/v1/messages` so cached prompt tokens are reported as cache reads instead of full prompt input.
 - **`pioneer/auto`**: Sent through `/v1/messages` so router choices, including GPT routes, get the cleaner cache accounting
 
 > **Router caveat**: `pioneer/auto` remains available, but Pioneer's router can be less reliable than selecting a concrete model on very long, mixed agent conversations (for example sessions with large context, prior tool calls/results, and prior responses from multiple model APIs). The provider disables Pi extended-thinking for `pioneer/auto` because router-selected upstreams can reject Anthropic thinking payloads; use concrete models such as `pioneer/gpt-5.5` or specific Claude models when you need explicit thinking blocks/tokens. Concrete models still use `/v1/messages` and preserve the clearer prompt-cache accounting.
