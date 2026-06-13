@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-06-13
+
+<!-- USER-EDITABLE SECTION START -->
+Compatibility fix for Pioneer `/v1/messages` streaming with `gpt-5.5`.
+
+**Highlights:**
+- Caps advertised max output tokens at 128K to avoid Pioneer upstream errors above that threshold
+- Keeps GPT/OpenAI-family models on `/v1/messages` for cache read/write accounting
+- Simplifies max-output budgeting by applying one 128K cap instead of model-specific exceptions
+<!-- USER-EDITABLE SECTION END -->
+
+### 🐛 Bug Fixes
+
+- Cap gpt-5.5 messages output at 128K ([#14](https://github.com/cad0p/pi-pioneer-provider/pull/14))
+
+
 ## [0.2.2] - 2026-06-12
 
 <!-- USER-EDITABLE SECTION START -->

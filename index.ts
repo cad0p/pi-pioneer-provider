@@ -153,11 +153,8 @@ async function fetchModels(
 // Provider transport selection
 // ---------------------------------------------------------------------------
 
-function getPioneerMaxTokens(modelId: string, contextWindow: number): number {
-  const catalogCap = Math.min(contextWindow >> 2, 131072);
-  // Pioneer Opus 4.7 currently accepts store:false/no-thinking requests at
-  // smaller caps, but returns an upstream error when max_tokens is 131072.
-  return modelId === "claude-opus-4-7" ? Math.min(catalogCap, 65536) : catalogCap;
+function getPioneerMaxTokens(_modelId: string, contextWindow: number): number {
+  return Math.min(contextWindow >> 2, 128000);
 }
 
 function isClaudeModel(modelId: string): boolean {
@@ -191,10 +188,10 @@ function getPioneerApiModelId(modelId: string): string {
   return modelId === "auto" ? "pioneer/auto" : modelId;
 }
 
-function pioneerCacheControlOnToolsEnabled(): boolean {
+function pioneerCacheControlOnToolsDisabled(): boolean {
   const value = process.env.PIONEER_CACHE_TOOLS;
-  return value === "1" || value?.toLowerCase() === "true" ||
-    value?.toLowerCase() === "yes" || value?.toLowerCase() === "on";
+  return value === "0" || value?.toLowerCase() === "false" ||
+    value?.toLowerCase() === "no" || value?.toLowerCase() === "off";
 }
 
 function isLikelyAnthropicThinkingSignature(signature: unknown): boolean {
@@ -265,10 +262,9 @@ function streamPioneer(
       compat: {
         ...model.compat,
         supportsTemperature: false,
-        // Opt-in only: Pi's tool schema can be tens of thousands of tokens.
-        // Caching it can greatly improve long-session cache hit rate, but the
-        // first write and any invalidated cache entries can be expensive.
-        supportsCacheControlOnTools: pioneerCacheControlOnToolsEnabled(),
+        // Default to on. Set PIONEER_CACHE_TOOLS=0/"false"/"no"/"off" to
+        // avoid counting the very large pi tool schema as a fresh cache write.
+        supportsCacheControlOnTools: !pioneerCacheControlOnToolsDisabled(),
         ...(isAdaptiveThinkingClaude(model.id)
           ? { forceAdaptiveThinking: true }
           : {}),
@@ -339,7 +335,7 @@ export default async function (pi: ExtensionAPI) {
         maxTokensField: isOpenAIModel(id) ? "max_completion_tokens" : "max_tokens",
         cacheControlFormat: "anthropic",
         supportsTemperature: false,
-        supportsCacheControlOnTools: pioneerCacheControlOnToolsEnabled(),
+        supportsCacheControlOnTools: !pioneerCacheControlOnToolsDisabled(),
         ...(isAdaptiveThinkingClaude(id) ? { forceAdaptiveThinking: true } : {}),
       },
     })),
