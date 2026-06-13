@@ -1,6 +1,6 @@
 {
   "name": "@cad0p/pi-pioneer-provider",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Pi coding agent provider for Pioneer AI API",
   "type": "module",
   "keywords": [
