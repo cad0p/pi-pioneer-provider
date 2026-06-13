@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [calver-released]
+
+<!-- USER-EDITABLE SECTION START -->
+<!-- Add your curated release notes here. -->
+<!-- USER-EDITABLE SECTION END -->
+
+### 🐛 Bug Fixes
+
+- Default Claude tool cache control + route GPT models through Responses API ([#16](https://github.com/cad0p/pi-pioneer-provider/pull/16))
+
+
 ## [0.2.3] - 2026-06-13
 
 <!-- USER-EDITABLE SECTION START -->
