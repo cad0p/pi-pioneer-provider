@@ -152,11 +152,8 @@ async function fetchModels(
 // Provider transport selection
 // ---------------------------------------------------------------------------
 
-function getPioneerMaxTokens(modelId: string, contextWindow: number): number {
-  const catalogCap = Math.min(contextWindow >> 2, 131072);
-  // Pioneer Opus 4.7 currently accepts store:false/no-thinking requests at
-  // smaller caps, but returns an upstream error when max_tokens is 131072.
-  return modelId === "claude-opus-4-7" ? Math.min(catalogCap, 65536) : catalogCap;
+function getPioneerMaxTokens(_modelId: string, contextWindow: number): number {
+  return Math.min(contextWindow >> 2, 128000);
 }
 
 function isClaudeModel(modelId: string): boolean {
