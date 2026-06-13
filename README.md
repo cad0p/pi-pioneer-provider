@@ -61,13 +61,21 @@ export PIONEER_BASE_URL=https://your-custom-endpoint.com/v1
 
 ## Prompt Caching
 
-Pioneer honors prompt caching on `/v1/chat/completions`, `/v1/messages`, `/v1/responses`, and native generate endpoints. This provider routes Pioneer Claude models, GPT/OpenAI-family models, and the `pioneer/auto` router through Pioneer's Anthropic-compatible `/v1/messages` endpoint because its usage accounting exposes cache reads and writes cleanly (`cache_read_input_tokens` / `cache_creation_input_tokens`). Other models continue to use OpenAI-compatible chat completions. The provider caps advertised output at 128K tokens to stay within Pioneer's streaming limits for models such as `gpt-5.5`.
+Pioneer honors prompt caching on `/v1/chat/completions`, `/v1/messages`, `/v1/responses`, and native generate endpoints. This provider routes Pioneer Claude models and the `pioneer/auto` router through Pioneer's Anthropic-compatible `/v1/messages` endpoint because its usage accounting exposes cache reads and writes cleanly (`cache_read_input_tokens` / `cache_creation_input_tokens`). OpenAI/GPT-family models, including `gpt-5.5`, use Pioneer's OpenAI Responses endpoint so GPT reasoning traces and native GPT prompt caching are preserved.
 
 - **Claude/Anthropic models**: Sent through `/v1/messages` with Anthropic `cache_control` markers
-- **OpenAI/GPT models** (GPT-4, GPT-5 families): Sent through `/v1/messages` so cached prompt tokens are reported as cache reads instead of full prompt input.
+- **OpenAI/GPT models** (GPT-4, GPT-5 families): Sent through `/v1/responses` for native GPT reasoning traces and automatic prompt caching
 - **`pioneer/auto`**: Sent through `/v1/messages` so router choices, including GPT routes, get the cleaner cache accounting
 
-> **Router caveat**: `pioneer/auto` remains available, but Pioneer's router can be less reliable than selecting a concrete model on very long, mixed agent conversations (for example sessions with large context, prior tool calls/results, and prior responses from multiple model APIs). The provider disables Pi extended-thinking for `pioneer/auto` because router-selected upstreams can reject Anthropic thinking payloads; use concrete models such as `pioneer/gpt-5.5` or specific Claude models when you need explicit thinking blocks/tokens. Concrete models still use `/v1/messages` and preserve the clearer prompt-cache accounting.
+By default, this provider **does** mark Pi tool definitions cacheable on the Claude/Anthropic path. Pi's tool schema can be tens of thousands of tokens, so opt out if you want to avoid a potentially large cache write on the first request. To disable tool-definition caching, start Pi with:
+
+```bash
+PIONEER_CACHE_TOOLS=0 pi
+```
+
+Set it back to `1`, `true`, `yes`, `on`, or unset to keep tool definitions cacheable by default.
+
+> **Router caveat**: `pioneer/auto` remains available, but Pioneer's router can be less reliable than selecting a concrete model on very long, mixed agent conversations (for example sessions with large context, prior tool calls/results, and prior responses from multiple model APIs). The provider disables Pi extended-thinking for `pioneer/auto` because router-selected upstreams can reject Anthropic thinking payloads; use concrete models such as `pioneer/gpt-5.5` or specific Claude models when you need explicit thinking blocks/tokens. Concrete models preserve their native transport: GPT models use `/v1/responses`, while Claude models use `/v1/messages`.
 
 See [Pioneer's prompt caching guide](https://docs.pioneer.ai/api-reference/prompt-caching) for details.
 

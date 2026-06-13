@@ -12,6 +12,7 @@
 import {
   streamSimpleAnthropic,
   streamSimpleOpenAICompletions,
+  streamSimpleOpenAIResponses,
 } from "@earendil-works/pi-ai";
 import type {
   AssistantMessageEventStream,
@@ -161,7 +162,11 @@ function isClaudeModel(modelId: string): boolean {
 }
 
 function shouldUseAnthropicMessages(modelId: string): boolean {
-  return modelId === "auto" || isClaudeModel(modelId) || isOpenAIModel(modelId);
+  return modelId === "auto" || isClaudeModel(modelId);
+}
+
+function shouldUseOpenAIResponses(modelId: string): boolean {
+  return isOpenAIModel(modelId);
 }
 
 function isAdaptiveThinkingClaude(modelId: string): boolean {
@@ -181,6 +186,12 @@ function isOpenAIModel(modelId: string): boolean {
 
 function getPioneerApiModelId(modelId: string): string {
   return modelId === "auto" ? "pioneer/auto" : modelId;
+}
+
+function pioneerCacheControlOnToolsDisabled(): boolean {
+  const value = process.env.PIONEER_CACHE_TOOLS;
+  return value === "0" || value?.toLowerCase() === "false" ||
+    value?.toLowerCase() === "no" || value?.toLowerCase() === "off";
 }
 
 function isLikelyAnthropicThinkingSignature(signature: unknown): boolean {
@@ -228,6 +239,19 @@ function streamPioneer(
   context: Context,
   options?: SimpleStreamOptions,
 ): AssistantMessageEventStream {
+  if (shouldUseOpenAIResponses(model.id)) {
+    return streamSimpleOpenAIResponses(model as Model<"openai-responses">, context, {
+      ...options,
+      onPayload: async (payload, payloadModel) => {
+        const pioneerPayload = payload && typeof payload === "object"
+          ? { ...payload, model: getPioneerApiModelId(model.id), store: false } :
+          payload;
+        const replacement = await options?.onPayload?.(pioneerPayload, payloadModel);
+        return replacement ?? pioneerPayload;
+      },
+    });
+  }
+
   if (shouldUseAnthropicMessages(model.id)) {
     const anthropicModel = {
       ...model,
@@ -238,11 +262,9 @@ function streamPioneer(
       compat: {
         ...model.compat,
         supportsTemperature: false,
-        // Pioneer's /messages endpoint accepts tool `cache_control`, but keeping
-        // it off avoids counting the very large pi tool schema as a fresh cache
-        // write on every request. The stable system prompt and latest message
-        // are still cache-marked by the Anthropic provider.
-        supportsCacheControlOnTools: false,
+        // Default to on. Set PIONEER_CACHE_TOOLS=0/"false"/"no"/"off" to
+        // avoid counting the very large pi tool schema as a fresh cache write.
+        supportsCacheControlOnTools: !pioneerCacheControlOnToolsDisabled(),
         ...(isAdaptiveThinkingClaude(model.id)
           ? { forceAdaptiveThinking: true }
           : {}),
@@ -309,11 +331,11 @@ export default async function (pi: ExtensionAPI) {
       // off inference retention on every request.
       compat: {
         supportsStore: true,
-        supportsDeveloperRole: false,
+        supportsDeveloperRole: isOpenAIModel(id),
         maxTokensField: isOpenAIModel(id) ? "max_completion_tokens" : "max_tokens",
         cacheControlFormat: "anthropic",
         supportsTemperature: false,
-        supportsCacheControlOnTools: false,
+        supportsCacheControlOnTools: !pioneerCacheControlOnToolsDisabled(),
         ...(isAdaptiveThinkingClaude(id) ? { forceAdaptiveThinking: true } : {}),
       },
     })),
