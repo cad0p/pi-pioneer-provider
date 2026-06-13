@@ -191,6 +191,12 @@ function getPioneerApiModelId(modelId: string): string {
   return modelId === "auto" ? "pioneer/auto" : modelId;
 }
 
+function pioneerCacheControlOnToolsEnabled(): boolean {
+  const value = process.env.PIONEER_CACHE_TOOLS;
+  return value === "1" || value?.toLowerCase() === "true" ||
+    value?.toLowerCase() === "yes" || value?.toLowerCase() === "on";
+}
+
 function isLikelyAnthropicThinkingSignature(signature: unknown): boolean {
   return typeof signature === "string" &&
     signature.length > 64 &&
@@ -259,11 +265,10 @@ function streamPioneer(
       compat: {
         ...model.compat,
         supportsTemperature: false,
-        // Pioneer's /messages endpoint accepts tool `cache_control`, but keeping
-        // it off avoids counting the very large pi tool schema as a fresh cache
-        // write on every request. The stable system prompt and latest message
-        // are still cache-marked by the Anthropic provider.
-        supportsCacheControlOnTools: false,
+        // Opt-in only: Pi's tool schema can be tens of thousands of tokens.
+        // Caching it can greatly improve long-session cache hit rate, but the
+        // first write and any invalidated cache entries can be expensive.
+        supportsCacheControlOnTools: pioneerCacheControlOnToolsEnabled(),
         ...(isAdaptiveThinkingClaude(model.id)
           ? { forceAdaptiveThinking: true }
           : {}),
@@ -334,7 +339,7 @@ export default async function (pi: ExtensionAPI) {
         maxTokensField: isOpenAIModel(id) ? "max_completion_tokens" : "max_tokens",
         cacheControlFormat: "anthropic",
         supportsTemperature: false,
-        supportsCacheControlOnTools: false,
+        supportsCacheControlOnTools: pioneerCacheControlOnToolsEnabled(),
         ...(isAdaptiveThinkingClaude(id) ? { forceAdaptiveThinking: true } : {}),
       },
     })),
