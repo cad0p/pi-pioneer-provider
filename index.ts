@@ -156,7 +156,12 @@ function getPioneerMaxTokens(modelId: string, contextWindow: number): number {
   const catalogCap = Math.min(contextWindow >> 2, 131072);
   // Pioneer Opus 4.7 currently accepts store:false/no-thinking requests at
   // smaller caps, but returns an upstream error when max_tokens is 131072.
-  return modelId === "claude-opus-4-7" ? Math.min(catalogCap, 65536) : catalogCap;
+  if (modelId === "claude-opus-4-7") return Math.min(catalogCap, 65536);
+  // Pioneer's /messages streaming endpoint currently rejects gpt-5.5 when
+  // max_tokens is above 128K. Keep the messages transport for cache accounting,
+  // but cap this model to the working completion-token range.
+  if (modelId === "gpt-5.5") return Math.min(catalogCap, 128000);
+  return catalogCap;
 }
 
 function isClaudeModel(modelId: string): boolean {
