@@ -17,6 +17,7 @@ Compatibility fix for Pioneer `/v1/messages` streaming with `gpt-5.5`.
 
 - Cap gpt-5.5 messages output at 128K ([#14](https://github.com/cad0p/pi-pioneer-provider/pull/14))
 
+
 ## [0.2.2] - 2026-06-12
 
 <!-- USER-EDITABLE SECTION START -->
