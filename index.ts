@@ -12,6 +12,7 @@
 import {
   streamSimpleAnthropic,
   streamSimpleOpenAICompletions,
+  streamSimpleOpenAIResponses,
 } from "@earendil-works/pi-ai";
 import type {
   AssistantMessageEventStream,
@@ -164,7 +165,11 @@ function isClaudeModel(modelId: string): boolean {
 }
 
 function shouldUseAnthropicMessages(modelId: string): boolean {
-  return modelId === "auto" || isClaudeModel(modelId) || isOpenAIModel(modelId);
+  return modelId === "auto" || isClaudeModel(modelId);
+}
+
+function shouldUseOpenAIResponses(modelId: string): boolean {
+  return isOpenAIModel(modelId);
 }
 
 function isAdaptiveThinkingClaude(modelId: string): boolean {
@@ -231,6 +236,19 @@ function streamPioneer(
   context: Context,
   options?: SimpleStreamOptions,
 ): AssistantMessageEventStream {
+  if (shouldUseOpenAIResponses(model.id)) {
+    return streamSimpleOpenAIResponses(model as Model<"openai-responses">, context, {
+      ...options,
+      onPayload: async (payload, payloadModel) => {
+        const pioneerPayload = payload && typeof payload === "object"
+          ? { ...payload, model: getPioneerApiModelId(model.id), store: false } :
+          payload;
+        const replacement = await options?.onPayload?.(pioneerPayload, payloadModel);
+        return replacement ?? pioneerPayload;
+      },
+    });
+  }
+
   if (shouldUseAnthropicMessages(model.id)) {
     const anthropicModel = {
       ...model,
@@ -312,7 +330,7 @@ export default async function (pi: ExtensionAPI) {
       // off inference retention on every request.
       compat: {
         supportsStore: true,
-        supportsDeveloperRole: false,
+        supportsDeveloperRole: isOpenAIModel(id),
         maxTokensField: isOpenAIModel(id) ? "max_completion_tokens" : "max_tokens",
         cacheControlFormat: "anthropic",
         supportsTemperature: false,
