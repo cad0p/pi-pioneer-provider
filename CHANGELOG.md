@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### 🐛 Bug Fixes
+
+- Fix Pioneer GLM/GPT dispatch so custom `pioneer` models are cloned onto the underlying pi-ai transport API before streaming, avoiding `Mismatched api` errors.
+- Add ZAI-style thinking compatibility for Pioneer-discovered GLM models (`zai-org/*`).
+
 ## [0.2.3] - 2026-06-13
 
 <!-- USER-EDITABLE SECTION START -->

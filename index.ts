@@ -10,9 +10,8 @@
  */
 
 import {
-  streamSimpleAnthropic,
-  streamSimpleOpenAICompletions,
-  streamSimpleOpenAIResponses,
+  streamSimple,
+  type Api,
 } from "@earendil-works/pi-ai";
 import type {
   AssistantMessageEventStream,
@@ -234,59 +233,100 @@ function sanitizeContextForPioneerMessages(context: Context): Context {
   };
 }
 
+function isZaiGlmModel(modelId: string): boolean {
+  return modelId.toLowerCase().startsWith("zai-org/") ||
+    /^glm-\d/i.test(modelId);
+}
+
+function cloneForPioneerTransport<TApi extends Api>(
+  model: Model<any>,
+  api: TApi,
+): Model<TApi> {
+  return { ...model, api } as Model<TApi>;
+}
+
+function pioneerPayload(payload: unknown, modelId: string): unknown {
+  return payload && typeof payload === "object"
+    ? { ...payload, model: getPioneerApiModelId(modelId), store: false }
+    : payload;
+}
+
+async function replacePayloadWithPioneerModel(
+  modelId: string,
+  options: SimpleStreamOptions | undefined,
+  payload: unknown,
+  payloadModel: Model<Api>,
+): Promise<unknown> {
+  const pioneerPayloadValue = pioneerPayload(payload, modelId);
+  const replacement = await options?.onPayload?.(pioneerPayloadValue, payloadModel);
+  return replacement ?? pioneerPayloadValue;
+}
+
+function passThroughOriginalPayloadModel(
+  model: Model<any>,
+  options: SimpleStreamOptions | undefined,
+): SimpleStreamOptions | undefined {
+  if (!options?.onPayload) return options;
+  return {
+    ...options,
+    onPayload: async (payload, _payloadModel) =>
+      options.onPayload?.(payload, model),
+  };
+}
+
 function streamPioneer(
   model: Model<any>,
   context: Context,
   options?: SimpleStreamOptions,
 ): AssistantMessageEventStream {
   if (shouldUseOpenAIResponses(model.id)) {
-    return streamSimpleOpenAIResponses(model as Model<"openai-responses">, context, {
-      ...options,
-      onPayload: async (payload, payloadModel) => {
-        const pioneerPayload = payload && typeof payload === "object"
-          ? { ...payload, model: getPioneerApiModelId(model.id), store: false } :
-          payload;
-        const replacement = await options?.onPayload?.(pioneerPayload, payloadModel);
-        return replacement ?? pioneerPayload;
+    return streamSimple(
+      cloneForPioneerTransport(model, "openai-responses"),
+      context,
+      {
+        ...options,
+        onPayload: (_payload, payloadModel) =>
+          replacePayloadWithPioneerModel(model.id, options, _payload, payloadModel),
       },
-    });
+    );
   }
 
   if (shouldUseAnthropicMessages(model.id)) {
-    const anthropicModel = {
-      ...model,
-      api: "anthropic-messages" as const,
-      // Anthropic SDK appends /v1/messages itself. Pioneer provider baseUrl is
-      // the OpenAI-compatible /v1 URL, so strip /v1 for this transport.
-      baseUrl: model.baseUrl.replace(/\/v1$/, ""),
-      compat: {
-        ...model.compat,
-        supportsTemperature: false,
-        // Default to on. Set PIONEER_CACHE_TOOLS=0/"false"/"no"/"off" to
-        // avoid counting the very large pi tool schema as a fresh cache write.
-        supportsCacheControlOnTools: !pioneerCacheControlOnToolsDisabled(),
-        ...(isAdaptiveThinkingClaude(model.id)
-          ? { forceAdaptiveThinking: true }
-          : {}),
+    const anthropicModel = cloneForPioneerTransport(
+      {
+        ...model,
+        // Anthropic SDK appends /v1/messages itself. Pioneer provider baseUrl is
+        // the OpenAI-compatible /v1 URL, so strip /v1 for this transport.
+        baseUrl: model.baseUrl.replace(/\/v1$/, ""),
+        compat: {
+          ...model.compat,
+          supportsTemperature: false,
+          // Default to on. Set PIONEER_CACHE_TOOLS=0/"false"/"no"/"off" to
+          // avoid counting the very large pi tool schema as a fresh cache write.
+          supportsCacheControlOnTools: !pioneerCacheControlOnToolsDisabled(),
+          ...(isAdaptiveThinkingClaude(model.id)
+            ? { forceAdaptiveThinking: true }
+            : {}),
+        },
       },
-    };
+      "anthropic-messages",
+    );
 
-    return streamSimpleAnthropic(anthropicModel, sanitizeContextForPioneerMessages(context), {
+    return streamSimple(anthropicModel, sanitizeContextForPioneerMessages(context), {
       ...options,
       // Pioneer accepts either Authorization or x-api-key on /messages; x-api-key
       // matches their examples and avoids ambiguity with Anthropic SDK defaults.
       headers: { ...options?.headers, "x-api-key": options?.apiKey ?? "" },
-      onPayload: async (payload, payloadModel) => {
-        const pioneerPayload = payload && typeof payload === "object"
-          ? { ...payload, model: getPioneerApiModelId(model.id), store: false }
-          : payload;
-        const replacement = await options?.onPayload?.(pioneerPayload, payloadModel);
-        return replacement ?? pioneerPayload;
-      },
+      onPayload: (_payload, payloadModel) =>
+        replacePayloadWithPioneerModel(model.id, options, _payload, payloadModel),
     });
   }
 
-  return streamSimpleOpenAICompletions(model as Model<"openai-completions">, context, options);
+  return streamSimple(
+    cloneForPioneerTransport(model, "openai-completions"),
+    context,
+    passThroughOriginalPayloadModel(model, options),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -336,6 +376,7 @@ export default async function (pi: ExtensionAPI) {
         cacheControlFormat: "anthropic",
         supportsTemperature: false,
         supportsCacheControlOnTools: !pioneerCacheControlOnToolsDisabled(),
+        ...(isZaiGlmModel(id) ? { thinkingFormat: "zai" as const } : {}),
         ...(isAdaptiveThinkingClaude(id) ? { forceAdaptiveThinking: true } : {}),
       },
     })),

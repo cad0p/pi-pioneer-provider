@@ -46,6 +46,7 @@ The following model capabilities are reported:
 
 - **Reasoning**: Enabled for all discovered concrete models
 - **Router thinking**: Disabled for `pioneer/auto`. Pioneer's `/v1/messages` router can select upstreams that reject Anthropic extended-thinking payloads, so the provider clamps Pi thinking off for the router while leaving concrete Pioneer models reasoning-capable.
+- **GLM/ZAI thinking**: Pioneer GLM models discovered as `zai-org/*` use the ZAI-style `thinking` request field through Pioneer's OpenAI-compatible chat-completions endpoint.
 - **Context window**: Fetched from Pioneer API. For the router model, derived dynamically as the **maximum context window among all discoverable models** (currently 1M tokens)
 - **Max tokens**: Set to `min(context_window / 4, 131072)` for all models
 
