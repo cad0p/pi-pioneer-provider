@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Default Claude tool cache control + route GPT models through Responses API ([#16](https://github.com/cad0p/pi-pioneer-provider/pull/16))
+- Dispatch Pioneer models via cloned transport APIs (pi-ai 0.79.8 compat) ([#18](https://github.com/cad0p/pi-pioneer-provider/pull/18))
 
 
 ## [0.2.3] - 2026-06-13
