@@ -2,10 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [calver-released]
+## [0.2.4] - 2026-06-22
 
 <!-- USER-EDITABLE SECTION START -->
-<!-- Add your curated release notes here. -->
+Compatibility fix for pi-ai 0.79.8's lazy provider registration refactor.
+
+**Highlights:**
+- Routes Pioneer models through the public `streamSimple()` with a cloned transport `api` (`openai-completions` / `openai-responses` / `anthropic-messages`), avoiding `Mismatched api` errors that broke GLM and GPT-5.5 after pi-ai 0.79.8
+- Adds ZAI-style `thinking` request field for Pioneer-discovered GLM models (`zai-org/*`)
+- Defaults Claude tool definitions to cacheable on the `/v1/messages` transport (opt out with `PIONEER_CACHE_TOOLS=0`)
+- Routes GPT/OpenAI-family models through Pioneer's OpenAI Responses endpoint for native reasoning traces and prompt caching
 <!-- USER-EDITABLE SECTION END -->
 
 ### 🐛 Bug Fixes
