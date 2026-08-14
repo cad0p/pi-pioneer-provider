@@ -19,7 +19,7 @@ jobs:
           version: 11
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 22.19
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
