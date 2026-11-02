@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [calver-released]
+
+<!-- USER-EDITABLE SECTION START -->
+<!-- Add your curated release notes here. -->
+<!-- USER-EDITABLE SECTION END -->
+
+### 🐛 Bug Fixes
+
+- *(package)* Ship CHANGELOG.md so Pi shows Extension Updates (closes #21)
+
+### ⚙️ Miscellaneous Tasks
+
+- Add pnpm-based CI (pi-napkin pattern) ([#19](https://github.com/cad0p/pi-pioneer-provider/pull/19))
+- Pin node to pi's minimum (22.19) — pi-coding-agent engines >=22.19.0 ([#20](https://github.com/cad0p/pi-pioneer-provider/pull/20))
+
+
 ## [0.2.4] - 2026-06-22
 
 <!-- USER-EDITABLE SECTION START -->
